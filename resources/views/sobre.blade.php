@@ -222,8 +222,8 @@
                     </div>
                     <div class="card-back">
                         <h2>{{ $miembro['nombre'] }}</h2>
-                        <p>💡 Rol en el equipo: Desarrollador</p>
-                        <p>✨ Apasionado por la innovación y la tecnología.</p>
+                        <p>Rol en el equipo: Desarrollador</p>
+                        <p>Apasionado por la innovación y la tecnología.</p>
                     </div>
                 </div>
             </div>
