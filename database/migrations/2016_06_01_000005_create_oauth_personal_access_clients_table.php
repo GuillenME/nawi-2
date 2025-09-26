@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('idiomas', function (Blueprint $table) {
-            $table->id('id_dioma');
-            $table->string('tipo', 45)->nullable();
+        Schema::create('oauth_personal_access_clients', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->unsignedBigInteger('client_id');
             $table->timestamps();
         });
     }
@@ -23,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('idiomas');
+        Schema::dropIfExists('oauth_personal_access_clients');
     }
 };

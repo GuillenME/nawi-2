@@ -2,9 +2,13 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GeneroController;
 use App\Http\Controllers\IdiomaController;
 use App\Http\Controllers\PasajeroController;
+use App\Http\Controllers\MatriculaController;
+use App\Http\Controllers\LicenciaController;
+use App\Http\Controllers\TaxistaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,15 +21,36 @@ use App\Http\Controllers\PasajeroController;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+// Rutas de autenticación (públicas)
+Route::post('/register/pasajero', [AuthController::class, 'registerPasajero']);
+Route::post('/register/taxista', [AuthController::class, 'registerTaxista']);
+Route::post('/login', [AuthController::class, 'login']);
+
+// Rutas protegidas con Passport
+Route::middleware('auth:api')->group(function () {
+    // Autenticación
+    Route::get('/user', [AuthController::class, 'me']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/logout-all', [AuthController::class, 'logoutAll']);
+
+    // Pasajeros (protegidas)
+    Route::apiResource('pasajeros', PasajeroController::class);
+
+    // Taxistas (protegidas)
+    Route::get('/taxista/me', [TaxistaController::class, 'me']);
+    Route::post('/taxista/upload-matricula', [TaxistaController::class, 'uploadMatricula']);
+    Route::post('/taxista/upload-licencia', [TaxistaController::class, 'uploadLicencia']);
+    Route::get('/taxista/documents', [TaxistaController::class, 'getDocuments']);
 });
 
-// Rutas para Géneros
+// Rutas para Géneros (públicas)
 Route::apiResource('generos', GeneroController::class);
 
-// Rutas para Idiomas
+// Rutas para Idiomas (públicas)
 Route::apiResource('idiomas', IdiomaController::class);
 
-// Rutas para Pasajeros
-Route::apiResource('pasajeros', PasajeroController::class);
+// Rutas para Matrículas (públicas)
+Route::apiResource('matriculas', MatriculaController::class);
+
+// Rutas para Licencias (públicas)
+Route::apiResource('licencias', LicenciaController::class);

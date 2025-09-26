@@ -2,27 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Pasajero;
-use App\Models\Usuario;
+use App\Models\Matricula;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Str;
 
-class PasajeroController extends Controller
+class MatriculaController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:api');
-    }
-
     /**
      * Display a listing of the resource.
      */
     public function index(): JsonResponse
     {
-        $pasajeros = Pasajero::with(['usuario.rol'])->get();
+        $matriculas = Matricula::with('estatus')->get();
         return response()->json([
             'success' => true,
-            'data' => $pasajeros
+            'data' => $matriculas
         ]);
     }
 
@@ -32,15 +27,21 @@ class PasajeroController extends Controller
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'id_usuario' => 'required|string|exists:usuarios,id'
+            'url' => 'required|string',
+            'id_estatus' => 'required|string|exists:estatus_documentos,id'
         ]);
 
-        $pasajero = Pasajero::create($request->all());
+        $matricula = Matricula::create([
+            'id' => Str::uuid(),
+            'url' => $request->url,
+            'fecha_subida' => now(),
+            'id_estatus' => $request->id_estatus
+        ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Pasajero creado exitosamente',
-            'data' => $pasajero->load(['usuario.rol'])
+            'message' => 'Matrícula creada exitosamente',
+            'data' => $matricula->load('estatus')
         ], 201);
     }
 
@@ -49,18 +50,18 @@ class PasajeroController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $pasajero = Pasajero::with(['usuario.rol'])->find($id);
+        $matricula = Matricula::with('estatus')->find($id);
 
-        if (!$pasajero) {
+        if (!$matricula) {
             return response()->json([
                 'success' => false,
-                'message' => 'Pasajero no encontrado'
+                'message' => 'Matrícula no encontrada'
             ], 404);
         }
 
         return response()->json([
             'success' => true,
-            'data' => $pasajero
+            'data' => $matricula
         ]);
     }
 
@@ -69,25 +70,26 @@ class PasajeroController extends Controller
      */
     public function update(Request $request, string $id): JsonResponse
     {
-        $request->validate([
-            'id_usuario' => 'sometimes|required|string|exists:usuarios,id'
-        ]);
+        $matricula = Matricula::find($id);
 
-        $pasajero = Pasajero::find($id);
-
-        if (!$pasajero) {
+        if (!$matricula) {
             return response()->json([
                 'success' => false,
-                'message' => 'Pasajero no encontrado'
+                'message' => 'Matrícula no encontrada'
             ], 404);
         }
 
-        $pasajero->update($request->all());
+        $request->validate([
+            'url' => 'sometimes|string',
+            'id_estatus' => 'sometimes|string|exists:estatus_documentos,id'
+        ]);
+
+        $matricula->update($request->only(['url', 'id_estatus']));
 
         return response()->json([
             'success' => true,
-            'message' => 'Pasajero actualizado exitosamente',
-            'data' => $pasajero->load(['usuario.rol'])
+            'message' => 'Matrícula actualizada exitosamente',
+            'data' => $matricula->load('estatus')
         ]);
     }
 
@@ -96,20 +98,20 @@ class PasajeroController extends Controller
      */
     public function destroy(string $id): JsonResponse
     {
-        $pasajero = Pasajero::find($id);
+        $matricula = Matricula::find($id);
 
-        if (!$pasajero) {
+        if (!$matricula) {
             return response()->json([
                 'success' => false,
-                'message' => 'Pasajero no encontrado'
+                'message' => 'Matrícula no encontrada'
             ], 404);
         }
 
-        $pasajero->delete();
+        $matricula->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'Pasajero eliminado exitosamente'
+            'message' => 'Matrícula eliminada exitosamente'
         ]);
     }
 }

@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('generos', function (Blueprint $table) {
-            $table->id('id_genero');
-            $table->string('tipo', 45)->nullable();
+        Schema::create('estatus_documentos', function (Blueprint $table) {
+            $table->char('id', 36)->primary();
+            $table->string('nombre', 45);
             $table->timestamps();
         });
     }
@@ -23,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('generos');
+        Schema::dropIfExists('estatus_documentos');
     }
 };

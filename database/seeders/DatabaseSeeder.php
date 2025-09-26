@@ -20,8 +20,8 @@ class DatabaseSeeder extends Seeder
         // ]);
 
         $this->call([
-            GeneroSeeder::class,
-            IdiomaSeeder::class,
+            RoleSeeder::class,
+            EstatusDocumentoSeeder::class,
         ]);
     }
 }

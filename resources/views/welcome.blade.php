@@ -1,12 +1,6 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>NAWI | Raíces que se mueven contigo</title>
-    @vite(['resources/sass/app.scss', 'resources/js/app.js'])
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
+@extends('layouts.app')
 
+@section('content')
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
 
@@ -90,6 +84,32 @@
             gap: 15px;
         }
 
+        .cta .d-flex {
+            display: flex !important;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .cta .btn {
+            min-width: 200px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .cta-secondary {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+            flex-wrap: wrap; /* Para que en móvil se acomoden bien */
+        }
+
+
         .btn {
             display: inline-block;
             padding: 14px 28px;
@@ -100,6 +120,24 @@
             text-decoration: none;
             font-size: 1.1rem;
             transition: transform 0.2s ease, box-shadow 0.3s ease;
+        }
+        .btn-secondary {
+            display: inline-block;
+            padding: 12px 24px;
+            border: 2px solid #ffc107;
+            color: #ffc107;
+            font-weight: bold;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 1rem;
+            background: transparent;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 193, 7, 0.1);
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
         }
 
         .btn:hover {
@@ -123,12 +161,11 @@
             .cards { flex-direction: column; gap: 20px; }
         }
     </style>
-</head>
-<body>
     <div class="container">
         <h1 data-aos="fade-down" data-aos-duration="1000">Bienvenido a NAWI</h1>
         <p class="subtitle" data-aos="fade-up" data-aos-duration="1200">
-            Conectamos a los habitantes de Ocosingo con un servicio de taxi seguro, accesible y eficiente. Lleva la tradición y cultura de nuestro pueblo donde vayas.
+            Conectamos a los habitantes de Ocosingo con un servicio de taxi seguro, accesible y eficiente.
+            Lleva la tradición y cultura de nuestro pueblo donde vayas.
         </p>
 
         <div class="cards">
@@ -151,21 +188,24 @@
 
         <div class="cta" data-aos="zoom-in" data-aos-duration="1000">
             <p>¿Quieres ser parte de NAWI?</p>
-            <a href="{{ route('register') }}" class="btn">Únete Ahora</a>
-            <a href="{{ route('login') }}" class="btn">Iniciar Sesión</a>
-            <a href="/sobre-nosotros" class="btn">Sobre Nosotros</a>
-            <a href="/taxistas" class="btn">Taxistas verificados</a>
+
+            <!-- Botones principales -->
+            <div class="d-flex gap-3 justify-content-center flex-wrap mb-3">
+                <a href="{{ route('login') }}" class="btn">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                </a>
+                <a href="{{ route('register.taxista') }}" class="btn">
+                    <i class="fas fa-taxi"></i> Registrarse como Taxista
+                </a>
+            </div>
+
+            <!-- Botones secundarios -->
+            <div class="cta-secondary">
+                <a href="/sobre-nosotros" class="btn-secondary">Sobre Nosotros</a>
+                <a href="/taxistas" class="btn-secondary">Taxistas Verificados</a>
+            </div>
         </div>
 
         <div class="footer">© {{ date('Y') }} NAWI | Raíces que se mueven contigo</div>
-        <a href="/sobre-nosotros" style="color:#ffc107; text-decoration:none;">Sobre Nosotros</a>
     </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
-    <script>
-        AOS.init({
-            once: true, // Las animaciones solo ocurren la primera vez que se hace scroll
-        });
-    </script>
-</body>
-</html>
+@endsection

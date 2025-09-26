@@ -10,38 +10,45 @@ class Taxista extends Model
     use HasFactory;
 
     protected $table = 'taxistas';
-    protected $primaryKey = 'id_taxista';
+    protected $primaryKey = 'id';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
-        'nombre',
-        'apellidos',
-        'edad',
-        'ine',
-        'permiso',
-        'licencia',
-        'num_telefono',
-        'contrasena',
-        'foto_conductor',
-        'foto_taxi',
-        'ubicacion_actual',
-        'estado',
-        'turno',
-        'id_carro',
-        'id_genero',
-        'id_idioma',
+        'id',
+        'id_matricula',
+        'id_licencia',
+        'id_usuario'
     ];
 
-    protected $hidden = [
-        'contrasena',
-    ];
-
-    public function taxi()
+    // Relaciones
+    public function usuario()
     {
-        return $this->belongsTo(Taxi::class);
-    }
-    public function carro() 
-    {
-        return $this->belongsTo(Taxi::class, 'id_carro', 'id_carro');
+        return $this->belongsTo(Usuario::class, 'id_usuario');
     }
 
+    public function matricula()
+    {
+        return $this->belongsTo(Matricula::class, 'id_matricula');
+    }
+
+    public function licencia()
+    {
+        return $this->belongsTo(Licencia::class, 'id_licencia');
+    }
+
+    public function taxis()
+    {
+        return $this->hasMany(Taxi::class, 'id_taxista');
+    }
+
+    public function suscripciones()
+    {
+        return $this->hasMany(Suscripcion::class, 'id_taxista');
+    }
+
+    public function calificaciones()
+    {
+        return $this->hasMany(CalificacionTaxi::class, 'id_taxista');
+    }
 }

@@ -1,9 +1,6 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sobre Nosotros</title>
+@extends('layouts.app')
+
+@section('content')
 <style>
     /* Reset básico */
     * {
@@ -21,43 +18,14 @@
     body {
         display: flex;
         flex-direction: column;
-    }
-
-    /* --- NAVBAR --- */
-    nav {
-        background-color: #1a1a1a;
-        padding: 12px 20px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-    }
-
-    nav .nav-logo img {
-        height: 55px;
-        transition: transform 0.3s;
-    }
-
-    nav .nav-logo img:hover {
-        transform: scale(1.1);
-    }
-
-    nav .nav-links a {
+        font-family: 'Montserrat', sans-serif;
+        margin: 0;
+        background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
+            url('https://static.wixstatic.com/media/952b60_67f559efb50a4101804756294550c92a~mv2.jpg') 
+            no-repeat center center/cover;
         color: #fff;
-        text-decoration: none;
-        font-weight: bold;
-        margin: 0 15px;
-        transition: color 0.3s, transform 0.2s;
     }
 
-    nav .nav-links a:hover {
-        color: #ffc107;
-        transform: translateY(-2px);
-    }
-
-    /* --- CONTENIDO --- */
     .container {
         flex: 1;
         width: 90%;
@@ -67,14 +35,12 @@
     }
 
     h1 {
-        text-align: center;
-        margin-bottom: 20px;
-        color: #1a1a1a;
-        font-size: 2.8rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-    }
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 6px #000;
+            text-align: center;
+        }
 
     .intro-text {
         text-align: center;
@@ -169,6 +135,8 @@
         padding: 20px;
         font-size: 0.95rem;
         letter-spacing: 1px;
+        margin-top: 40px;
+        border-radius: 8px;
     }
 
     footer p {
@@ -187,18 +155,6 @@
         .card-inner { height: 280px; }
     }
 </style>
-</head>
-<body>
-
-<nav>
-    <div class="nav-logo">
-        <img src="{{ asset('images/logo1.png') }}" alt="Logo Nawi">
-    </div>
-    <div class="nav-links">
-        <a href="/taxistas">Taxistas</a>
-        <a href="/sobre-nosotros">Sobre Nosotros</a>
-    </div>
-</nav>
 
 <div class="container">
     <h1>Sobre Nosotros</h1>
@@ -235,6 +191,4 @@
     <p>&copy; 2025 NAWI TECNOLOGÍAS S.A. DE C.V.</p>
     <p>Todos los derechos reservados.</p>
 </footer>
-
-</body>
-</html>
+@endsection

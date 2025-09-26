@@ -9,31 +9,34 @@ class Pasajero extends Model
 {
     use HasFactory;
 
-    protected $primaryKey = 'id_pasajero';
+    protected $table = 'pasajeros';
+    protected $primaryKey = 'id';
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
-        'nombre',
-        'apellidos',
-        'ine',
-        'foto',
-        'correo',
-        'num_telefono',
-        'contrasena',
-        'discapacidad',
-        'id_genero',
-        'id_dioma'
+        'id',
+        'id_usuario'
     ];
 
-    protected $casts = [
-        'discapacidad' => 'boolean',
-    ];
-
-    public function genero()
+    // Relaciones
+    public function usuario()
     {
-        return $this->belongsTo(Genero::class, 'id_genero');
+        return $this->belongsTo(Usuario::class, 'id_usuario');
     }
 
-    public function idioma()
+    public function viajes()
     {
-        return $this->belongsTo(Idioma::class, 'id_dioma');
+        return $this->hasMany(Viaje::class, 'id_pasajero');
+    }
+
+    public function calificacionesViajes()
+    {
+        return $this->hasMany(CalificacionViaje::class, 'id_pasajero');
+    }
+
+    public function calificacionesTaxis()
+    {
+        return $this->hasMany(CalificacionTaxi::class, 'id_pasajero');
     }
 }
