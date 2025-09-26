@@ -65,9 +65,18 @@
     /* --- GRID EQUIPO --- */
     .grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        /* grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); */
+        grid-template-columns: repeat(4, 1fr);
         gap: 25px;
     }
+
+    @media (max-width: 1024px) {
+    .grid {
+        grid-template-columns: repeat(2, 1fr); /* 2 por fila */
+    }
+}
+
+
 
     /* --- TARJETAS FLIP --- */
     .card {
