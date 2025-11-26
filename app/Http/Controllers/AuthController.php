@@ -227,4 +227,49 @@ class AuthController extends Controller
             ]
         ]);
     }
+
+    /**
+     * GET /usuario/{userId}
+     * Obtener información de un usuario por su ID
+     */
+    public function getUsuario(string $userId): JsonResponse
+    {
+        $usuario = Usuario::with('fotos')->find($userId);
+
+        if (!$usuario) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Usuario no encontrado'
+            ], 404);
+        }
+
+        // Determinar el tipo de usuario
+        $tipo = '';
+        if ($usuario->pasajero) {
+            $tipo = 'pasajero';
+        } elseif ($usuario->taxista) {
+            $tipo = 'taxista';
+        } elseif ($usuario->admin) {
+            $tipo = 'admin';
+        }
+
+        // Obtener la foto del usuario (primera foto si existe)
+        $foto = $usuario->fotos && $usuario->fotos->count() > 0 
+            ? $usuario->fotos->first()->url 
+            : null;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $usuario->id,
+                'nombre' => $usuario->nombre,
+                'apellido' => $usuario->apellido,
+                'email' => $usuario->email,
+                'id_rol' => $usuario->id_rol,
+                'telefono' => $usuario->telefono ?? null,
+                'foto' => $foto,
+                'tipo' => $tipo
+            ]
+        ]);
+    }
 }
