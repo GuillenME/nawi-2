@@ -127,7 +127,82 @@
 
 ---
 
-### 3. GET /api/taxista/viajes-disponibles
+### 3. POST /api/pasajero/calificar-viaje/{viajeId}
+
+**Descripción:** Calificar un viaje completado
+
+**Autenticación:** Requerida (Bearer Token)
+
+**Request Body:**
+```json
+{
+  "calificacion": 5,                    // int, requerido, rango 1-5
+  "comentario": "Excelente servicio"      // string, opcional, máximo 500 caracteres
+}
+```
+
+**Response Success (201):**
+```json
+{
+  "success": true,
+  "message": "Viaje calificado exitosamente",
+  "data": {
+    "id": "uuid-del-viaje",
+    "calificacion": 5,
+    "comentario": "Excelente servicio"
+  }
+}
+```
+
+**Response Error - Viaje no encontrado (404):**
+```json
+{
+  "success": false,
+  "message": "Viaje no encontrado o no pertenece al pasajero autenticado"
+}
+```
+
+**Response Error - Viaje no completado (422):**
+```json
+{
+  "success": false,
+  "message": "El viaje debe estar completado para poder calificarlo. Estado actual: aceptado"
+}
+```
+
+**Response Error - Ya calificado (422):**
+```json
+{
+  "success": false,
+  "message": "Este viaje ya fue calificado"
+}
+```
+
+**Response Error - Datos inválidos (422):**
+```json
+{
+  "success": false,
+  "message": "Datos de entrada inválidos",
+  "errors": {
+    "calificacion": ["El campo calificacion debe ser un número entre 1 y 5"],
+    "comentario": ["El campo comentario no puede tener más de 500 caracteres"]
+  }
+}
+```
+
+**Validaciones implementadas:**
+- ✅ Verifica que el token JWT sea válido (middleware `auth:api` - retorna 401 si no es válido)
+- ✅ Verifica que el usuario sea un pasajero (retorna 403 si no lo es)
+- ✅ Verifica que el viaje pertenezca al pasajero autenticado
+- ✅ Verifica que el viaje esté en estado "completado"
+- ✅ Valida que `calificacion` esté entre 1 y 5 (integer)
+- ✅ Valida que `comentario` sea opcional pero si existe, tenga máximo 500 caracteres
+- ✅ Verifica que el viaje no haya sido calificado previamente
+- ✅ Valida que el ID del viaje no esté vacío
+
+---
+
+### 4. GET /api/taxista/viajes-disponibles
 
 **Descripción:** Obtener viajes disponibles para el taxista autenticado (excluye expirados)
 
@@ -168,7 +243,7 @@
 
 ---
 
-### 4. POST /api/taxista/aceptar-viaje/{viajeId}
+### 5. POST /api/taxista/aceptar-viaje/{viajeId}
 
 **Descripción:** Aceptar un viaje solicitado (con validación de tiempo límite y tarifa opcional)
 
@@ -249,7 +324,7 @@
 
 ---
 
-### 5. GET /api/taxista/mis-viajes
+### 6. GET /api/taxista/mis-viajes
 
 **Descripción:** Obtener todos los viajes del taxista autenticado
 

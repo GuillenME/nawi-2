@@ -325,6 +325,55 @@
 
 ---
 
+### 8. POST /api/pasajero/calificar-viaje/{viajeId}
+
+**Descripción:** Califica un viaje completado
+
+**Autenticación:** Requerida (Bearer Token)
+
+**Request Body:**
+```json
+{
+  "calificacion": 5,                    // int, requerido, rango 1-5
+  "comentario": "Excelente servicio"      // string, opcional, máximo 500 caracteres
+}
+```
+
+**Respuesta exitosa (201):**
+```json
+{
+  "success": true,
+  "message": "Viaje calificado exitosamente",
+  "data": {
+    "id": "uuid-del-viaje",
+    "calificacion": 5,
+    "comentario": "Excelente servicio"
+  }
+}
+```
+
+**Validaciones implementadas:**
+- ✅ Verifica que el token JWT sea válido (middleware `auth:api` - retorna 401 si no es válido)
+- ✅ Verifica que el usuario sea un pasajero (retorna 403 si no lo es)
+- ✅ Verifica que el viaje pertenezca al pasajero autenticado
+- ✅ Verifica que el viaje esté en estado "completado"
+- ✅ Valida que `calificacion` esté entre 1 y 5 (integer)
+- ✅ Valida que `comentario` sea opcional pero si existe, tenga máximo 500 caracteres
+- ✅ Verifica que el viaje no haya sido calificado previamente
+- ✅ Valida que el ID del viaje no esté vacío
+
+**Errores posibles:**
+- `400`: ID del viaje no válido
+- `401`: Token JWT inválido o no proporcionado
+- `403`: Usuario no es un pasajero
+- `404`: Viaje no encontrado o no pertenece al pasajero
+- `422`: 
+  - Datos de entrada inválidos (calificación fuera de rango, comentario muy largo)
+  - Viaje no está completado
+  - Viaje ya fue calificado
+
+---
+
 ## 📋 Resumen de Campos Importantes
 
 ### Campo `id` del viaje:

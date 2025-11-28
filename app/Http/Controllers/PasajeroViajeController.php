@@ -386,6 +386,15 @@ class PasajeroViajeController extends Controller
      */
     public function calificarViaje(Request $request, string $viajeId): JsonResponse
     {
+        // Validar que el ID del viaje no esté vacío
+        if (empty($viajeId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ID del viaje no válido'
+            ], 400);
+        }
+
+        // Validar datos de entrada
         $validator = Validator::make($request->all(), [
             'calificacion' => 'required|integer|between:1,5',
             'comentario' => 'nullable|string|max:500'
@@ -399,6 +408,7 @@ class PasajeroViajeController extends Controller
             ], 422);
         }
 
+        // Verificar que el usuario autenticado sea un pasajero
         $pasajero = $request->user()->pasajero;
 
         if (!$pasajero) {
@@ -408,16 +418,24 @@ class PasajeroViajeController extends Controller
             ], 403);
         }
 
+        // Buscar el viaje y verificar que pertenezca al pasajero
         $viaje = Viaje::where('id', $viajeId)
             ->where('id_pasajero', $pasajero->id)
-            ->where('estado', Viaje::ESTADO_COMPLETADO)
             ->first();
 
         if (!$viaje) {
             return response()->json([
                 'success' => false,
-                'message' => 'Viaje no encontrado o no completado'
+                'message' => 'Viaje no encontrado o no pertenece al pasajero autenticado'
             ], 404);
+        }
+
+        // Verificar que el viaje esté en estado "completado"
+        if ($viaje->estado !== Viaje::ESTADO_COMPLETADO) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El viaje debe estar completado para poder calificarlo. Estado actual: ' . $viaje->estado
+            ], 422);
         }
 
         // Verificar si ya fue calificado
@@ -431,7 +449,7 @@ class PasajeroViajeController extends Controller
         try {
             DB::beginTransaction();
 
-            CalificacionViaje::create([
+            $calificacion = CalificacionViaje::create([
                 'id' => Str::uuid(),
                 'calificacion' => $request->calificacion,
                 'id_pasajero' => $pasajero->id,
@@ -441,10 +459,16 @@ class PasajeroViajeController extends Controller
 
             DB::commit();
 
+            // Retornar respuesta con los datos requeridos
             return response()->json([
                 'success' => true,
-                'message' => 'Viaje calificado exitosamente'
-            ]);
+                'message' => 'Viaje calificado exitosamente',
+                'data' => [
+                    'id' => $viaje->id,
+                    'calificacion' => (int)$calificacion->calificacion,
+                    'comentario' => $calificacion->comentario
+                ]
+            ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
