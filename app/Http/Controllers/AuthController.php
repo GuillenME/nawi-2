@@ -254,8 +254,8 @@ class AuthController extends Controller
         }
 
         // Obtener la foto del usuario (primera foto si existe)
-        $foto = $usuario->fotos && $usuario->fotos->count() > 0 
-            ? $usuario->fotos->first()->url 
+        $foto = $usuario->fotos && $usuario->fotos->count() > 0
+            ? $usuario->fotos->first()->url
             : null;
 
         return response()->json([
@@ -271,5 +271,98 @@ class AuthController extends Controller
                 'tipo' => $tipo
             ]
         ]);
+    }
+
+    /**
+     * PUT /usuario/perfil
+     * Actualizar perfil del usuario autenticado
+     */
+    public function updatePerfil(Request $request): JsonResponse
+    {
+        $usuario = $request->user();
+
+        if (!$usuario) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Usuario no autenticado'
+            ], 401);
+        }
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'nombre' => 'sometimes|string|max:45',
+            'apellido' => 'sometimes|string|max:45',
+            'telefono' => 'sometimes|string|max:15|nullable',
+            'email' => 'sometimes|email|max:100|unique:usuarios,email,' . $usuario->id,
+            'password' => 'sometimes|string|min:6|nullable'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Datos de entrada inválidos',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            // Actualizar campos permitidos
+            if ($request->has('nombre')) {
+                $usuario->nombre = $request->nombre;
+            }
+            if ($request->has('apellido')) {
+                $usuario->apellido = $request->apellido;
+            }
+            if ($request->has('telefono')) {
+                $usuario->telefono = $request->telefono;
+            }
+            if ($request->has('email')) {
+                $usuario->email = $request->email;
+            }
+            if ($request->has('password') && $request->password) {
+                $usuario->password = Hash::make($request->password);
+            }
+
+            $usuario->save();
+
+            // Recargar relaciones
+            $usuario->load('fotos');
+
+            // Determinar el tipo de usuario
+            $tipo = '';
+            if ($usuario->pasajero) {
+                $tipo = 'pasajero';
+            } elseif ($usuario->taxista) {
+                $tipo = 'taxista';
+            } elseif ($usuario->admin) {
+                $tipo = 'admin';
+            }
+
+            // Obtener la foto del usuario (primera foto si existe)
+            $foto = $usuario->fotos && $usuario->fotos->count() > 0
+                ? $usuario->fotos->first()->url
+                : null;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Perfil actualizado exitosamente',
+                'data' => [
+                    'id' => $usuario->id,
+                    'nombre' => $usuario->nombre,
+                    'apellido' => $usuario->apellido,
+                    'email' => $usuario->email,
+                    'id_rol' => $usuario->id_rol,
+                    'telefono' => $usuario->telefono ?? null,
+                    'foto' => $foto,
+                    'tipo' => $tipo
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el perfil',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

@@ -121,6 +121,10 @@ class PasajeroViajeController extends Controller
     $direccionDestino = 'Destino';
 
     // ✅ Preparar datos del viaje
+    // Establecer tiempo límite de aceptación (5 minutos por defecto, o el especificado)
+    $minutosLimite = $request->input('tiempo_limite_minutos', 5);
+    $tiempoLimite = now()->addMinutes($minutosLimite);
+
     $viajeData = [
         'id' => Str::uuid(),
         'id_pasajero' => $pasajero->id,
@@ -131,6 +135,7 @@ class PasajeroViajeController extends Controller
         'longitud_destino' => $request->destino['lon'],
         'direccion_destino' => $direccionDestino,
         'estado' => Viaje::ESTADO_SOLICITADO,
+        'tiempo_limite_aceptacion' => $tiempoLimite,
     ];
 
     // ✅ Solo incluir id_taxista y id_taxi si existe el taxista
@@ -146,9 +151,8 @@ class PasajeroViajeController extends Controller
     // Cargar las relaciones necesarias
     $viaje->load(['taxista.usuario', 'taxi', 'pasajero.usuario']);
 
-    // Obtener todos los datos del viaje excepto el ID
+    // Obtener todos los datos del viaje incluyendo el ID
     $viajeData = $viaje->toArray();
-    unset($viajeData['id']);
 
     // Formatear las fechas si existen
     if ($viaje->fecha_aceptacion) {
@@ -170,6 +174,14 @@ class PasajeroViajeController extends Controller
     if ($viaje->updated_at) {
         $viajeData['updated_at'] = $viaje->updated_at->toIso8601String();
     }
+
+    if ($viaje->tiempo_limite_aceptacion) {
+        $viajeData['tiempo_limite_aceptacion'] = $viaje->tiempo_limite_aceptacion->toIso8601String();
+    } else {
+        $viajeData['tiempo_limite_aceptacion'] = null;
+    }
+
+    $viajeData['tarifa'] = $viaje->tarifa ? (float)$viaje->tarifa : null;
 
     // Agregar información del taxista si existe
     $taxista = $viaje->taxista;
@@ -306,6 +318,8 @@ class PasajeroViajeController extends Controller
                     'fecha_creacion' => $viaje->created_at->toIso8601String(),
                     'fecha_aceptacion' => $viaje->fecha_aceptacion ? $viaje->fecha_aceptacion->toIso8601String() : null,
                     'fecha_completado' => $viaje->fecha_completado ? $viaje->fecha_completado->toIso8601String() : null,
+                    'tiempo_limite_aceptacion' => $viaje->tiempo_limite_aceptacion ? $viaje->tiempo_limite_aceptacion->toIso8601String() : null,
+                    'tarifa' => $viaje->tarifa ? (float)$viaje->tarifa : null,
                     'calificacion' => $viaje->calificacion ? (float)$viaje->calificacion->calificacion : null,
                     'comentario' => $viaje->calificacion ? $viaje->calificacion->comentario : null,
                     'pasajero' => $pasajeroData,

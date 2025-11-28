@@ -41,7 +41,9 @@ class Viaje extends Model
         'fecha_completado',
         'lat_actual',
         'lon_actual',
-        'comentario'
+        'comentario',
+        'tiempo_limite_aceptacion',
+        'tarifa'
     ];
 
     protected $casts = [
@@ -53,6 +55,8 @@ class Viaje extends Model
         'lon_actual' => 'float',
         'fecha_aceptacion' => 'datetime',
         'fecha_completado' => 'datetime',
+        'tiempo_limite_aceptacion' => 'datetime',
+        'tarifa' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -94,7 +98,7 @@ class Viaje extends Model
     public function scopeDisponibles(Builder $query, ?string $taxistaId = null): Builder
     {
         $query = $query->where('estado', self::ESTADO_SOLICITADO);
-        
+
         if ($taxistaId) {
             $query->where(function($q) use ($taxistaId) {
                 $q->where('id_taxista', $taxistaId)

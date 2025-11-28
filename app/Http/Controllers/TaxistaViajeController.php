@@ -36,10 +36,17 @@ class TaxistaViajeController extends Controller
         // 1. Viajes con estado "solicitado"
         // 2. Que tengan id_taxista igual al taxista autenticado (solicitudes dirigidas a él)
         // 3. O viajes sin id_taxista asignado (solicitudes generales)
+        // 4. Que no hayan expirado (tiempo_limite_aceptacion es null o mayor a ahora)
+        // 5. Que tengan un ID válido (no null)
         $viajes = Viaje::where('estado', Viaje::ESTADO_SOLICITADO)
+            ->whereNotNull('id') // Asegurar que el ID no sea null
             ->where(function($query) use ($taxista) {
                 $query->where('id_taxista', $taxista->id)
                       ->orWhereNull('id_taxista');
+            })
+            ->where(function($query) {
+                $query->whereNull('tiempo_limite_aceptacion')
+                      ->orWhere('tiempo_limite_aceptacion', '>', now());
             })
             ->with(['pasajero.usuario', 'taxista.usuario', 'taxi.taxista.usuario', 'taxi'])
             ->orderBy('created_at', 'desc')
@@ -47,13 +54,23 @@ class TaxistaViajeController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $viajes->map(function ($viaje) {
+            'data' => $viajes->filter(function ($viaje) {
+                // Filtrar viajes que no tengan ID válido
+                return !empty($viaje->id);
+            })->map(function ($viaje) {
                 $taxista = $viaje->taxista ?: ($viaje->taxi ? $viaje->taxi->taxista : null);
                 $taxistaUsuario = $taxista && $taxista->usuario ? $taxista->usuario : null;
                 $taxi = $viaje->taxi;
 
+                // Asegurar que el ID siempre esté presente y no sea null
+                $viajeId = $viaje->id;
+                if (empty($viajeId)) {
+                    // Si por alguna razón el ID está vacío, saltar este viaje
+                    return null;
+                }
+
                 return [
-                    'id' => $viaje->id,
+                    'id' => $viajeId, // Campo 'id' exactamente como se requiere
                     'pasajero_id' => $viaje->id_pasajero,
                     'pasajero' => $viaje->pasajero && $viaje->pasajero->usuario ? [
                         'nombre' => $viaje->pasajero->usuario->nombre,
@@ -79,9 +96,14 @@ class TaxistaViajeController extends Controller
                     'longitud_destino' => $viaje->longitud_destino,
                     'direccion_destino' => $viaje->direccion_destino,
                     'estado' => $viaje->estado,
-                    'fecha_creacion' => $viaje->created_at->toIso8601String()
+                    'fecha_creacion' => $viaje->created_at->toIso8601String(),
+                    'tiempo_limite_aceptacion' => $viaje->tiempo_limite_aceptacion ? $viaje->tiempo_limite_aceptacion->toIso8601String() : null,
+                    'tarifa' => $viaje->tarifa ? (float)$viaje->tarifa : null
                 ];
-            })
+            })->filter(function ($viaje) {
+                // Filtrar cualquier viaje que sea null (por ID inválido)
+                return $viaje !== null;
+            })->values() // Reindexar el array para que los índices sean secuenciales
         ]);
     }
 
@@ -171,6 +193,8 @@ class TaxistaViajeController extends Controller
                     'fecha_creacion' => $viaje->created_at->toIso8601String(),
                     'fecha_aceptacion' => $viaje->fecha_aceptacion ? $viaje->fecha_aceptacion->toIso8601String() : null,
                     'fecha_completado' => $viaje->fecha_completado ? $viaje->fecha_completado->toIso8601String() : null,
+                    'tiempo_limite_aceptacion' => $viaje->tiempo_limite_aceptacion ? $viaje->tiempo_limite_aceptacion->toIso8601String() : null,
+                    'tarifa' => $viaje->tarifa ? (float)$viaje->tarifa : null,
                     'calificacion' => $viaje->calificacion ? (float)$viaje->calificacion->calificacion : null,
                     'comentario' => $viaje->calificacion ? $viaje->calificacion->comentario : null,
                     'pasajero' => $pasajeroData,
@@ -186,6 +210,14 @@ class TaxistaViajeController extends Controller
      */
     public function aceptarViaje(Request $request, string $viajeId): JsonResponse
     {
+        // Validar que el ID del viaje no esté vacío o sea null
+        if (empty($viajeId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ID del viaje no válido. El viaje no tiene un ID válido.'
+            ], 400);
+        }
+
         $taxista = $request->user()->taxista;
 
         if (!$taxista) {
@@ -195,19 +227,72 @@ class TaxistaViajeController extends Controller
             ], 403);
         }
 
-        $viaje = Viaje::where('id', $viajeId)
-            ->where('estado', Viaje::ESTADO_SOLICITADO)
-            ->where(function($query) use ($taxista) {
-                $query->where('id_taxista', $taxista->id)
-                      ->orWhereNull('id_taxista');
-            })
-            ->first();
+        // Primero buscar el viaje sin restricciones de estado para dar mejor feedback
+        $viaje = Viaje::find($viajeId);
+        
+        // Validar que el viaje encontrado tenga un ID válido
+        if ($viaje && empty($viaje->id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ID del viaje no válido. El viaje no tiene un ID válido.'
+            ], 400);
+        }
 
         if (!$viaje) {
             return response()->json([
                 'success' => false,
-                'message' => 'Viaje no disponible'
+                'message' => 'Viaje no encontrado'
             ], 404);
+        }
+
+        // Validar que el viaje esté en estado solicitado
+        if ($viaje->estado !== Viaje::ESTADO_SOLICITADO) {
+            $mensajeEstado = match($viaje->estado) {
+                Viaje::ESTADO_ACEPTADO => 'Este viaje ya fue aceptado por otro taxista',
+                Viaje::ESTADO_EN_PROGRESO => 'Este viaje ya está en progreso',
+                Viaje::ESTADO_COMPLETADO => 'Este viaje ya fue completado',
+                Viaje::ESTADO_CANCELADO => 'Este viaje fue cancelado',
+                Viaje::ESTADO_RECHAZADO => 'Este viaje fue rechazado',
+                default => 'El viaje no está disponible. Estado actual: ' . $viaje->estado
+            };
+            
+            return response()->json([
+                'success' => false,
+                'message' => $mensajeEstado
+            ], 422);
+        }
+
+        // Validar que el viaje no haya expirado
+        if ($viaje->tiempo_limite_aceptacion && now()->greaterThan($viaje->tiempo_limite_aceptacion)) {
+            // Marcar el viaje como cancelado si expiró
+            $viaje->update(['estado' => Viaje::ESTADO_CANCELADO]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'El tiempo límite para aceptar este viaje ha expirado'
+            ], 422);
+        }
+
+        // Validar que el viaje esté disponible para este taxista
+        // Puede aceptar si: id_taxista es null (disponible para todos) O id_taxista es igual al taxista autenticado
+        if ($viaje->id_taxista !== null && $viaje->id_taxista !== $taxista->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Este viaje fue asignado a otro taxista'
+            ], 422);
+        }
+
+        // Validar tarifa si se proporciona
+        $validator = Validator::make($request->all(), [
+            'tarifa' => 'nullable|numeric|min:0|max:9999.99'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Datos de entrada inválidos',
+                'errors' => $validator->errors()
+            ], 422);
         }
 
         // Obtener el taxi del taxista
@@ -223,12 +308,50 @@ class TaxistaViajeController extends Controller
         try {
             DB::beginTransaction();
 
-            $viaje->update([
+            // Re-verificar el estado del viaje dentro de la transacción con bloqueo
+            // para evitar condiciones de carrera
+            $viajeBloqueado = Viaje::lockForUpdate()->find($viajeId);
+            
+            if (!$viajeBloqueado || $viajeBloqueado->estado !== Viaje::ESTADO_SOLICITADO) {
+                DB::rollBack();
+                $mensajeEstado = $viajeBloqueado ? match($viajeBloqueado->estado) {
+                    Viaje::ESTADO_ACEPTADO => 'Este viaje ya fue aceptado por otro taxista',
+                    Viaje::ESTADO_EN_PROGRESO => 'Este viaje ya está en progreso',
+                    Viaje::ESTADO_COMPLETADO => 'Este viaje ya fue completado',
+                    Viaje::ESTADO_CANCELADO => 'Este viaje fue cancelado',
+                    Viaje::ESTADO_RECHAZADO => 'Este viaje fue rechazado',
+                    default => 'El viaje no está disponible. Estado actual: ' . $viajeBloqueado->estado
+                } : 'Viaje no encontrado';
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => $mensajeEstado
+                ], 422);
+            }
+
+            // Verificar nuevamente que el viaje esté disponible para este taxista
+            if ($viajeBloqueado->id_taxista !== null && $viajeBloqueado->id_taxista !== $taxista->id) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Este viaje fue asignado a otro taxista'
+                ], 422);
+            }
+
+            $updateData = [
                 'id_taxista' => $taxista->id,
                 'id_taxi' => $taxi->id,
                 'estado' => Viaje::ESTADO_ACEPTADO,
                 'fecha_aceptacion' => now()
-            ]);
+            ];
+
+            // Agregar tarifa si se proporciona
+            if ($request->has('tarifa') && $request->tarifa !== null) {
+                $updateData['tarifa'] = $request->tarifa;
+            }
+
+            $viajeBloqueado->update($updateData);
+            $viaje = $viajeBloqueado;
 
             DB::commit();
 
@@ -296,6 +419,8 @@ class TaxistaViajeController extends Controller
                     'fecha_creacion' => $viaje->created_at->toIso8601String(),
                     'fecha_aceptacion' => $viaje->fecha_aceptacion ? $viaje->fecha_aceptacion->toIso8601String() : null,
                     'fecha_completado' => $viaje->fecha_completado ? $viaje->fecha_completado->toIso8601String() : null,
+                    'tiempo_limite_aceptacion' => $viaje->tiempo_limite_aceptacion ? $viaje->tiempo_limite_aceptacion->toIso8601String() : null,
+                    'tarifa' => $viaje->tarifa ? (float)$viaje->tarifa : null,
                     'calificacion' => $viaje->calificacion ? (float)$viaje->calificacion->calificacion : null,
                     'comentario' => $viaje->calificacion ? $viaje->calificacion->comentario : null,
                     'pasajero' => $pasajeroData,
@@ -328,23 +453,79 @@ class TaxistaViajeController extends Controller
             ], 403);
         }
 
-        $viaje = Viaje::where('id', $viajeId)
-            ->where('estado', Viaje::ESTADO_SOLICITADO)
-            ->where('id_taxista', $taxista->id) // Solo puede rechazar viajes dirigidos a él
-            ->first();
+        // Primero buscar el viaje sin restricciones para dar mejor feedback
+        $viaje = Viaje::find($viajeId);
 
         if (!$viaje) {
             return response()->json([
                 'success' => false,
-                'message' => 'Viaje no disponible o no dirigido a este taxista'
+                'message' => 'Viaje no encontrado'
             ], 404);
         }
 
+        // Validar que el viaje esté en estado solicitado
+        if ($viaje->estado !== Viaje::ESTADO_SOLICITADO) {
+            $mensajeEstado = match($viaje->estado) {
+                Viaje::ESTADO_ACEPTADO => 'Este viaje ya fue aceptado',
+                Viaje::ESTADO_EN_PROGRESO => 'Este viaje ya está en progreso',
+                Viaje::ESTADO_COMPLETADO => 'Este viaje ya fue completado',
+                Viaje::ESTADO_CANCELADO => 'Este viaje fue cancelado',
+                Viaje::ESTADO_RECHAZADO => 'Este viaje ya fue rechazado',
+                default => 'El viaje no está disponible. Estado actual: ' . $viaje->estado
+            };
+            
+            return response()->json([
+                'success' => false,
+                'message' => $mensajeEstado
+            ], 422);
+        }
+
+        // Solo puede rechazar viajes dirigidos específicamente a él
+        if ($viaje->id_taxista !== $taxista->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Este viaje no está dirigido a ti'
+            ], 422);
+        }
+
         try {
-            $viaje->update([
+            DB::beginTransaction();
+
+            // Re-verificar el estado del viaje dentro de la transacción con bloqueo
+            $viajeBloqueado = Viaje::lockForUpdate()->find($viajeId);
+            
+            if (!$viajeBloqueado || $viajeBloqueado->estado !== Viaje::ESTADO_SOLICITADO) {
+                DB::rollBack();
+                $mensajeEstado = $viajeBloqueado ? match($viajeBloqueado->estado) {
+                    Viaje::ESTADO_ACEPTADO => 'Este viaje ya fue aceptado',
+                    Viaje::ESTADO_EN_PROGRESO => 'Este viaje ya está en progreso',
+                    Viaje::ESTADO_COMPLETADO => 'Este viaje ya fue completado',
+                    Viaje::ESTADO_CANCELADO => 'Este viaje fue cancelado',
+                    Viaje::ESTADO_RECHAZADO => 'Este viaje ya fue rechazado',
+                    default => 'El viaje no está disponible. Estado actual: ' . $viajeBloqueado->estado
+                } : 'Viaje no encontrado';
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => $mensajeEstado
+                ], 422);
+            }
+
+            // Verificar nuevamente que el viaje esté dirigido a este taxista
+            if ($viajeBloqueado->id_taxista !== $taxista->id) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Este viaje no está dirigido a ti'
+                ], 422);
+            }
+
+            $viajeBloqueado->update([
                 'estado' => Viaje::ESTADO_RECHAZADO,
                 'id_taxista' => null // Liberar el viaje para que otros taxistas puedan aceptarlo
             ]);
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
@@ -352,6 +533,7 @@ class TaxistaViajeController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Error al rechazar el viaje',
