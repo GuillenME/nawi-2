@@ -22,8 +22,13 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Passport::tokensExpireIn(now()->addMinutes(5));
-        Passport::refreshTokensExpireIn(now()->addMinutes(10));
-        Passport::personalAccessTokensExpireIn(now()->addMinutes(5));
+        // Access tokens - Expiran en 8 horas
+        Passport::tokensExpireIn(now()->addHours(8));
+
+        // Refresh tokens - Deben ser más largos que los access tokens (24 horas)
+        Passport::refreshTokensExpireIn(now()->addHours(24));
+
+        // Personal access tokens - También 8 horas para consistencia
+        Passport::personalAccessTokensExpireIn(now()->addHours(8));
     }
 }
