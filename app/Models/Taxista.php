@@ -51,4 +51,12 @@ class Taxista extends Model
     {
         return $this->hasMany(CalificacionTaxi::class, 'id_taxista');
     }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return \Database\Factories\TaxistaFactory::new();
+    }
 }

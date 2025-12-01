@@ -67,4 +67,12 @@ class Usuario extends Authenticatable
     {
         return $this->hasMany(Foto::class, 'id_usuario');
     }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return \Database\Factories\UsuarioFactory::new();
+    }
 }

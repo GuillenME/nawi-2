@@ -26,10 +26,26 @@ class GeneroController extends Controller
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'tipo' => 'required|string|max:45'
+            'tipo' => [
+                'required',
+                'string',
+                'max:45',
+                'min:3',
+                'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/',
+                function ($attribute, $value, $fail) {
+                    if (preg_match('/[<>\"\'&;]/', $value)) {
+                        $fail('El campo ' . $attribute . ' no puede contener símbolos peligrosos.');
+                    }
+                }
+            ]
+        ], [
+            'tipo.regex' => 'El tipo solo puede contener letras y espacios.',
+            'tipo.min' => 'El tipo debe tener al menos 3 caracteres.'
         ]);
 
-        $genero = Genero::create($request->all());
+        // Sanitizar datos antes de guardar
+        $tipo = trim(strip_tags($request->tipo));
+        $genero = Genero::create(['tipo' => $tipo]);
 
         return response()->json([
             'success' => true,
@@ -64,7 +80,21 @@ class GeneroController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         $request->validate([
-            'tipo' => 'required|string|max:45'
+            'tipo' => [
+                'required',
+                'string',
+                'max:45',
+                'min:3',
+                'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/',
+                function ($attribute, $value, $fail) {
+                    if (preg_match('/[<>\"\'&;]/', $value)) {
+                        $fail('El campo ' . $attribute . ' no puede contener símbolos peligrosos.');
+                    }
+                }
+            ]
+        ], [
+            'tipo.regex' => 'El tipo solo puede contener letras y espacios.',
+            'tipo.min' => 'El tipo debe tener al menos 3 caracteres.'
         ]);
 
         $genero = Genero::find($id);
@@ -76,7 +106,9 @@ class GeneroController extends Controller
             ], 404);
         }
 
-        $genero->update($request->all());
+        // Sanitizar datos antes de actualizar
+        $tipo = trim(strip_tags($request->tipo));
+        $genero->update(['tipo' => $tipo]);
 
         return response()->json([
             'success' => true,

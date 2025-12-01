@@ -40,7 +40,22 @@ class RoleController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'nombre' => 'required|string|max:45|unique:roles,nombre'
+            'nombre' => [
+                'required',
+                'string',
+                'max:45',
+                'min:3',
+                'unique:roles,nombre',
+                'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/',
+                function ($attribute, $value, $fail) {
+                    if (preg_match('/[<>\"\'&;]/', $value)) {
+                        $fail('El campo ' . $attribute . ' no puede contener símbolos peligrosos.');
+                    }
+                }
+            ]
+        ], [
+            'nombre.regex' => 'El nombre solo puede contener letras y espacios.',
+            'nombre.min' => 'El nombre debe tener al menos 3 caracteres.'
         ]);
 
         if ($validator->fails()) {
@@ -52,7 +67,9 @@ class RoleController extends Controller
         }
 
         try {
-            $role = $this->roleService->createRole($request->nombre);
+            // Sanitizar el nombre antes de crear el rol
+            $nombre = trim(strip_tags($request->nombre));
+            $role = $this->roleService->createRole($nombre);
 
             return response()->json([
                 'success' => true,

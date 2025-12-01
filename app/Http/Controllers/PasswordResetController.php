@@ -27,7 +27,16 @@ class PasswordResetController extends Controller
     public function sendResetLink(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email|exists:usuarios,email',
+            'email' => [
+                'required',
+                'email',
+                'exists:usuarios,email',
+                function ($attribute, $value, $fail) {
+                    if (preg_match('/[<>\"\'&;]/', $value)) {
+                        $fail('El campo ' . $attribute . ' no puede contener símbolos peligrosos.');
+                    }
+                }
+            ],
         ], [
             'email.required' => 'El email es obligatorio',
             'email.email' => 'El formato del email no es válido',
@@ -99,7 +108,16 @@ class PasswordResetController extends Controller
     public function sendResetLinkApi(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email|exists:usuarios,email',
+            'email' => [
+                'required',
+                'email',
+                'exists:usuarios,email',
+                function ($attribute, $value, $fail) {
+                    if (preg_match('/[<>\"\'&;]/', $value)) {
+                        $fail('El campo ' . $attribute . ' no puede contener símbolos peligrosos.');
+                    }
+                }
+            ],
         ], [
             'email.required' => 'El email es obligatorio',
             'email.email' => 'El formato del email no es válido',
@@ -213,7 +231,12 @@ class PasswordResetController extends Controller
                 'min:8',
                 'max:128',
                 'confirmed',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/'
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]+$/',
+                function ($attribute, $value, $fail) {
+                    if (preg_match('/[<>]/', $value)) {
+                        $fail('El campo ' . $attribute . ' no puede contener símbolos peligrosos como < o >.');
+                    }
+                }
             ],
         ], [
             'email.required' => 'El email es obligatorio',
@@ -275,7 +298,12 @@ class PasswordResetController extends Controller
                 'min:8',
                 'max:128',
                 'confirmed',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/'
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]+$/',
+                function ($attribute, $value, $fail) {
+                    if (preg_match('/[<>]/', $value)) {
+                        $fail('El campo ' . $attribute . ' no puede contener símbolos peligrosos como < o >.');
+                    }
+                }
             ],
         ], [
             'email.required' => 'El email es obligatorio',

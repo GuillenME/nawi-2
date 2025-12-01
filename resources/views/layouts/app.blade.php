@@ -83,6 +83,9 @@
                     <a href="/">Inicio</a>
                     <a href="/taxistas">Taxistas</a>
                     <a href="/sobre-nosotros">Sobre Nosotros</a>
+                    <a href="{{ route('download.apk') }}" class="download-apk-link" target="_blank" title="Descargar App Android">
+                        <i class="fab fa-android"></i> Descargar App
+                    </a>
                 @endauth
             </div>
         </nav>

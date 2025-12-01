@@ -42,6 +42,9 @@
                 <a href="{{ route('register.taxista') }}" class="btn">
                     <i class="fas fa-taxi"></i> Registrarse como Taxista
                 </a>
+                <a href="{{ route('download.apk') }}" class="btn btn-success" target="_blank">
+                    <i class="fab fa-android"></i> Descargar App
+                </a>
             </div>
 
             <!-- Botones secundarios -->

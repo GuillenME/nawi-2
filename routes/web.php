@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\TaxistaController;
 use App\Http\Controllers\WebAuthController;
+use App\Http\Controllers\ApkController;
 use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
@@ -77,3 +78,8 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/offline', function () {
     return view('offline');
 });
+
+// Rutas para descargar el APK
+Route::get('/download/apk', [ApkController::class, 'download'])->name('download.apk');
+Route::get('/download/apk/{filename}', [ApkController::class, 'downloadCustom'])->name('download.apk.custom');
+Route::get('/api/apk/info', [ApkController::class, 'info'])->name('apk.info');

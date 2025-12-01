@@ -62,9 +62,14 @@
                             <p>¿No tienes cuenta?
                                 <a href="{{ route('register.taxista') }}">Registrarse como Taxista</a>
                             </p>
-                            <p class="text-muted">
-                                <small>¿Eres pasajero? Descarga nuestra app móvil para registrarte.</small>
-                            </p>
+                            <div class="text-center mt-3">
+                                <p class="text-muted mb-2">
+                                    <small>¿Eres pasajero? Descarga nuestra app móvil para registrarte.</small>
+                                </p>
+                                <a href="{{ route('download.apk') }}" class="btn btn-success btn-sm" target="_blank">
+                                    <i class="fab fa-android"></i> Descargar App Android
+                                </a>
+                            </div>
                         </div>
                     </form>
                 </div>

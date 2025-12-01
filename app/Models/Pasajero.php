@@ -39,4 +39,12 @@ class Pasajero extends Model
     {
         return $this->hasMany(CalificacionTaxi::class, 'id_pasajero');
     }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return \Database\Factories\PasajeroFactory::new();
+    }
 }

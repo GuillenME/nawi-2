@@ -397,7 +397,18 @@ class PasajeroViajeController extends Controller
         // Validar datos de entrada
         $validator = Validator::make($request->all(), [
             'calificacion' => 'required|integer|between:1,5',
-            'comentario' => 'nullable|string|max:500'
+            'comentario' => [
+                'nullable',
+                'string',
+                'max:500',
+                function ($attribute, $value, $fail) {
+                    if ($value && preg_match('/[<>\"\'&;]/', $value)) {
+                        $fail('El campo ' . $attribute . ' no puede contener símbolos peligrosos.');
+                    }
+                }
+            ]
+        ], [
+            'comentario.max' => 'El comentario no puede exceder 500 caracteres.'
         ]);
 
         if ($validator->fails()) {
