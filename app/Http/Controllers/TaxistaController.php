@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Taxista;
 use App\Models\Matricula;
 use App\Models\Licencia;
+use App\Models\Suscripcion;
 use App\Services\EstatusDocumentoService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -18,7 +19,7 @@ class TaxistaController extends Controller
     public function __construct(EstatusDocumentoService $estatusService)
     {
         $this->estatusService = $estatusService;
-        
+
         // Solo aplicar autenticación a métodos específicos de API
         $this->middleware('auth:api')->only([
             'me', 'uploadMatricula', 'uploadLicencia', 'getDocuments'
@@ -173,7 +174,15 @@ class TaxistaController extends Controller
                           ->where('id_usuario', $user->id)
                           ->first();
 
-        return view('taxista.dashboard', compact('taxista'));
+        // Obtener suscripción actual
+        $suscripcion = null;
+        if ($taxista) {
+            $suscripcion = \App\Models\Suscripcion::where('id_taxista', $taxista->id)
+                ->latest('created_at')
+                ->first();
+        }
+
+        return view('taxista.dashboard', compact('taxista', 'suscripcion'));
     }
 
     /**

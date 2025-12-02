@@ -63,6 +63,15 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/foto/upload-perfil', [App\Http\Controllers\FotoController::class, 'uploadPerfil'])->name('foto.upload.perfil');
     Route::post('/foto/eliminar-perfil', [App\Http\Controllers\FotoController::class, 'eliminarPerfil'])->name('foto.eliminar.perfil');
     Route::get('/foto/{id}', [App\Http\Controllers\FotoController::class, 'verFoto'])->name('foto.ver');
+
+    // Rutas para suscripciones (solo taxistas)
+    Route::prefix('taxista/suscripcion')->name('taxista.suscripcion.')->group(function () {
+        Route::get('/', [App\Http\Controllers\WebSuscripcionController::class, 'index'])->name('index');
+        Route::get('/crear', [App\Http\Controllers\WebSuscripcionController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\WebSuscripcionController::class, 'store'])->name('store');
+        Route::get('/{id}', [App\Http\Controllers\WebSuscripcionController::class, 'show'])->name('show');
+        Route::post('/{id}/confirmar-pago', [App\Http\Controllers\WebSuscripcionController::class, 'confirmarPago'])->name('confirmar-pago');
+    });
 });
 
 // Rutas de administración

@@ -266,4 +266,172 @@
     </div>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form[action="{{ route('register.taxista') }}"]');
+    const nombreInput = document.getElementById('nombre');
+    const apellidoInput = document.getElementById('apellido');
+    const telefonoInput = document.getElementById('telefono');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const passwordConfirmationInput = document.getElementById('password_confirmation');
+
+    // Función para validar y bloquear símbolos peligrosos
+    function bloquearSimbolosPeligrosos(input, permitirNumeros = false, permitirEmail = false) {
+        input.addEventListener('input', function(e) {
+            let valor = e.target.value;
+            // Lista de símbolos peligrosos
+            const simbolosPeligrosos = /[<>"'&;{}\[\]()|\\`~!@#$%^*+=?:,\/]/g;
+
+            if (permitirEmail) {
+                // Para email, permitir @, ., _, - pero bloquear otros peligrosos
+                valor = valor.replace(/[<>"'&;{}\[\]()|\\`~!#$%^*+=?:,\/]/g, '');
+            } else if (permitirNumeros) {
+                // Para teléfono, solo números
+                valor = valor.replace(/[^0-9]/g, '');
+            } else {
+                // Para nombre/apellido, solo letras y espacios
+                valor = valor.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
+            }
+
+            if (e.target.value !== valor) {
+                e.target.value = valor;
+            }
+        });
+    }
+
+    // Validación de nombre (solo letras, mínimo 3 caracteres)
+    bloquearSimbolosPeligrosos(nombreInput);
+    nombreInput.addEventListener('blur', function() {
+        const valor = this.value.trim();
+        if (valor.length > 0 && valor.length < 3) {
+            this.setCustomValidity('El nombre debe tener al menos 3 caracteres.');
+        } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(valor) && valor.length > 0) {
+            this.setCustomValidity('El nombre solo puede contener letras y espacios.');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+
+    // Validación de apellido (solo letras, mínimo 3 caracteres)
+    bloquearSimbolosPeligrosos(apellidoInput);
+    apellidoInput.addEventListener('blur', function() {
+        const valor = this.value.trim();
+        if (valor.length > 0 && valor.length < 3) {
+            this.setCustomValidity('El apellido debe tener al menos 3 caracteres.');
+        } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(valor) && valor.length > 0) {
+            this.setCustomValidity('El apellido solo puede contener letras y espacios.');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+
+    // Validación de teléfono (solo números, exactamente 10)
+    bloquearSimbolosPeligrosos(telefonoInput, true);
+    telefonoInput.addEventListener('input', function() {
+        // Limitar a 10 dígitos
+        if (this.value.length > 10) {
+            this.value = this.value.slice(0, 10);
+        }
+    });
+    telefonoInput.addEventListener('blur', function() {
+        if (this.value.length !== 10) {
+            this.setCustomValidity('El teléfono debe tener exactamente 10 números.');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+
+    // Validación de email (bloquear símbolos peligrosos)
+    bloquearSimbolosPeligrosos(emailInput, false, true);
+
+    // Validación de contraseña (mayúscula, minúscula, número, carácter especial)
+    passwordInput.addEventListener('input', function() {
+        // Bloquear símbolos peligrosos específicos
+        this.value = this.value.replace(/[<>"'&;{}\[\]()|\\`~]/g, '');
+    });
+    passwordInput.addEventListener('blur', function() {
+        const valor = this.value;
+        const tieneMinuscula = /[a-z]/.test(valor);
+        const tieneMayuscula = /[A-Z]/.test(valor);
+        const tieneNumero = /\d/.test(valor);
+        const tieneCaracterEspecial = /[@$!%*?&#]/.test(valor);
+
+        if (valor.length < 8) {
+            this.setCustomValidity('La contraseña debe tener al menos 8 caracteres.');
+        } else if (!tieneMinuscula) {
+            this.setCustomValidity('La contraseña debe contener al menos una letra minúscula.');
+        } else if (!tieneMayuscula) {
+            this.setCustomValidity('La contraseña debe contener al menos una letra mayúscula.');
+        } else if (!tieneNumero) {
+            this.setCustomValidity('La contraseña debe contener al menos un número.');
+        } else if (!tieneCaracterEspecial) {
+            this.setCustomValidity('La contraseña debe contener al menos un carácter especial (@$!%*?&#).');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+
+    // Validación de confirmación de contraseña
+    passwordConfirmationInput.addEventListener('blur', function() {
+        if (this.value !== passwordInput.value) {
+            this.setCustomValidity('Las contraseñas no coinciden.');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+    passwordInput.addEventListener('input', function() {
+        if (passwordConfirmationInput.value) {
+            passwordConfirmationInput.dispatchEvent(new Event('blur'));
+        }
+    });
+
+    // Validación antes de enviar el formulario
+    form.addEventListener('submit', function(e) {
+        let esValido = true;
+
+        // Validar nombre
+        if (nombreInput.value.trim().length < 3) {
+            nombreInput.setCustomValidity('El nombre debe tener al menos 3 caracteres.');
+            esValido = false;
+        }
+
+        // Validar apellido
+        if (apellidoInput.value.trim().length < 3) {
+            apellidoInput.setCustomValidity('El apellido debe tener al menos 3 caracteres.');
+            esValido = false;
+        }
+
+        // Validar teléfono
+        if (telefonoInput.value.length !== 10) {
+            telefonoInput.setCustomValidity('El teléfono debe tener exactamente 10 números.');
+            esValido = false;
+        }
+
+        // Validar contraseña
+        const password = passwordInput.value;
+        if (password.length < 8 ||
+            !/[a-z]/.test(password) ||
+            !/[A-Z]/.test(password) ||
+            !/\d/.test(password) ||
+            !/[@$!%*?&#]/.test(password)) {
+            passwordInput.setCustomValidity('La contraseña debe cumplir todos los requisitos.');
+            esValido = false;
+        }
+
+        // Validar confirmación
+        if (passwordConfirmationInput.value !== passwordInput.value) {
+            passwordConfirmationInput.setCustomValidity('Las contraseñas no coinciden.');
+            esValido = false;
+        }
+
+        if (!esValido) {
+            e.preventDefault();
+            // Forzar la visualización de mensajes de validación
+            form.reportValidity();
+        }
+    });
+});
+</script>
+
 @endsection

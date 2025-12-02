@@ -6,11 +6,13 @@ use App\Models\Usuario;
 use App\Models\Pasajero;
 use App\Models\Taxista;
 use App\Models\Admin;
+use App\Models\Suscripcion;
 use App\Services\RoleService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
@@ -152,7 +154,8 @@ class AuthController extends Controller
                 'min:3',
                 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/',
                 function ($attribute, $value, $fail) {
-                    if (preg_match('/[<>\"\'&;]/', $value)) {
+                    // Bloquear símbolos peligrosos que puedan causar XSS, SQL injection, etc.
+                    if (preg_match('/[<>\"\'&;{}\[\]()|\\`~!@#$%^*+=?:,\/]/', $value)) {
                         $fail('El campo ' . $attribute . ' no puede contener símbolos peligrosos.');
                     }
                 }
@@ -164,7 +167,8 @@ class AuthController extends Controller
                 'min:3',
                 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/',
                 function ($attribute, $value, $fail) {
-                    if (preg_match('/[<>\"\'&;]/', $value)) {
+                    // Bloquear símbolos peligrosos que puedan causar XSS, SQL injection, etc.
+                    if (preg_match('/[<>\"\'&;{}\[\]()|\\`~!@#$%^*+=?:,\/]/', $value)) {
                         $fail('El campo ' . $attribute . ' no puede contener símbolos peligrosos.');
                     }
                 }
@@ -173,10 +177,11 @@ class AuthController extends Controller
                 'required',
                 'string',
                 'size:10',
-                'regex:/^[0-9]+$/',
+                'regex:/^[0-9]{10}$/',
                 function ($attribute, $value, $fail) {
-                    if (preg_match('/[<>\"\'&;]/', $value)) {
-                        $fail('El campo ' . $attribute . ' no puede contener símbolos peligrosos.');
+                    // Bloquear símbolos peligrosos
+                    if (preg_match('/[<>\"\'&;{}\[\]()|\\`~!@#$%^*+=?:,\/\s\w]/', $value)) {
+                        $fail('El campo ' . $attribute . ' solo puede contener números.');
                     }
                 }
             ],
@@ -186,7 +191,8 @@ class AuthController extends Controller
                 'max:100',
                 'unique:usuarios,email',
                 function ($attribute, $value, $fail) {
-                    if (preg_match('/[<>\"\'&;]/', $value)) {
+                    // Bloquear símbolos peligrosos específicos que no son parte de un email válido
+                    if (preg_match('/[<>\"\'&;{}\[\]()|\\`~!#$%^*+=?:,\/]/', $value)) {
                         $fail('El campo ' . $attribute . ' no puede contener símbolos peligrosos.');
                     }
                 }
@@ -197,8 +203,9 @@ class AuthController extends Controller
                 'min:8',
                 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]+$/',
                 function ($attribute, $value, $fail) {
-                    if (preg_match('/[<>]/', $value)) {
-                        $fail('El campo ' . $attribute . ' no puede contener símbolos peligrosos como < o >.');
+                    // Bloquear símbolos peligrosos específicos que pueden causar problemas
+                    if (preg_match('/[<>\"\'&;{}\[\]()|\\`~]/', $value)) {
+                        $fail('El campo ' . $attribute . ' no puede contener símbolos peligrosos como < > " \' & ; { } [ ] ( ) | \\ ` ~.');
                     }
                 }
             ]
@@ -208,8 +215,8 @@ class AuthController extends Controller
             'apellido.regex' => 'El apellido solo puede contener letras y espacios.',
             'apellido.min' => 'El apellido debe tener al menos 3 caracteres.',
             'telefono.size' => 'El teléfono debe tener exactamente 10 números.',
-            'telefono.regex' => 'El teléfono solo puede contener números.',
-            'password.regex' => 'La contraseña debe contener al menos una mayúscula, una minúscula, un número y un carácter especial.',
+            'telefono.regex' => 'El teléfono solo puede contener números (10 dígitos).',
+            'password.regex' => 'La contraseña debe contener al menos una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&#).',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres.'
         ]);
 
@@ -242,16 +249,31 @@ class AuthController extends Controller
         ]);
 
         // Crear registro en tabla taxistas (sin documentos por ahora)
-        Taxista::create([
+        $taxista = Taxista::create([
             'id' => Str::uuid(),
             'id_usuario' => $usuario->id,
             'id_matricula' => null, // Se agregará después
             'id_licencia' => null   // Se agregará después
         ]);
 
+        // Crear suscripción inicial (sin pago, pendiente)
+        $fechaInicio = now();
+        $fechaFin = $fechaInicio->copy()->addMonth();
+
+        Suscripcion::create([
+            'id' => Str::uuid(),
+            'id_taxista' => $taxista->id,
+            'fecha_inicio' => $fechaInicio,
+            'fecha_fin' => $fechaFin,
+            'precio' => 120.00,
+            'pagado' => 0,
+            'activo' => 0,
+            'estado_pago' => 'pendiente'
+        ]);
+
         return response()->json([
             'success' => true,
-            'message' => 'Taxista registrado exitosamente. Puedes subir tus documentos después del login.',
+            'message' => 'Taxista registrado exitosamente. Debes activar tu suscripción para usar el servicio.',
             'data' => [
                 'usuario' => $usuario->load('rol'),
                 'tipo' => 'taxista'

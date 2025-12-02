@@ -110,6 +110,54 @@
                     </div>
 
                     <div class="mt-4">
+                        <h5>💳 Suscripción Mensual</h5>
+                        @if($suscripcion)
+                            @if($suscripcion->estaActiva())
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle"></i>
+                                    <strong>Estado:</strong> Activa<br>
+                                    <strong>Vence:</strong> {{ $suscripcion->fecha_fin->format('d/m/Y') }}<br>
+                                    <strong>Días restantes:</strong> {{ $suscripcion->diasRestantes() }} días<br>
+                                    <strong>Monto:</strong> ${{ number_format($suscripcion->precio, 2) }} MXN/mes
+                                    <div class="mt-2">
+                                        <a href="{{ route('taxista.suscripcion.index') }}" class="btn btn-primary">
+                                            <i class="fas fa-credit-card"></i> Gestionar Suscripción
+                                        </a>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <strong>Estado:</strong> {{ ucfirst($suscripcion->estado_pago) }}<br>
+                                    @if($suscripcion->estaVencida())
+                                        <strong>Vencida desde:</strong> {{ $suscripcion->fecha_fin->format('d/m/Y') }}<br>
+                                    @else
+                                        <strong>Vence:</strong> {{ $suscripcion->fecha_fin->format('d/m/Y') }}<br>
+                                        <strong>Días restantes:</strong> {{ $suscripcion->diasRestantes() }} días<br>
+                                    @endif
+                                    <strong>Monto:</strong> ${{ number_format($suscripcion->precio, 2) }} MXN/mes
+                                    <div class="mt-2">
+                                        <a href="{{ route('taxista.suscripcion.index') }}" class="btn btn-warning">
+                                            <i class="fas fa-credit-card"></i> Renovar Suscripción
+                                        </a>
+                                    </div>
+                                </div>
+                            @endif
+                        @else
+                            <div class="alert alert-danger">
+                                <i class="fas fa-times-circle"></i>
+                                <strong>No tienes suscripción activa</strong><br>
+                                Para poder aceptar viajes, necesitas activar tu suscripción mensual de $120.00 MXN
+                                <div class="mt-2">
+                                    <a href="{{ route('taxista.suscripcion.create') }}" class="btn btn-success">
+                                        <i class="fas fa-plus"></i> Activar Suscripción
+                                    </a>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="mt-4">
                         <h5>Información del Taxista</h5>
                         <div class="alert alert-info">
                             <i class="fas fa-user"></i>

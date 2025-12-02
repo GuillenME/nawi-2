@@ -13,6 +13,7 @@ use App\Http\Controllers\PasajeroViajeController;
 use App\Http\Controllers\TaxistaViajeController;
 use App\Http\Controllers\SistemaViajeController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SuscripcionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -72,11 +73,11 @@ Route::middleware('auth:api')->group(function () {
 
     // ========== ENDPOINTS PARA TAXISTAS ==========
     Route::prefix('taxista')->group(function () {
-        Route::get('/viajes-disponibles', [TaxistaViajeController::class, 'viajesDisponibles']);
-        Route::get('/mis-viajes', [TaxistaViajeController::class, 'misViajes']);
-        Route::post('/aceptar-viaje/{viajeId}', [TaxistaViajeController::class, 'aceptarViaje']);
-        Route::post('/rechazar-viaje/{viajeId}', [TaxistaViajeController::class, 'rechazarViaje']);
-        Route::post('/completar-viaje/{viajeId}', [TaxistaViajeController::class, 'completarViaje']);
+        Route::get('/viajes-disponibles', [TaxistaViajeController::class, 'viajesDisponibles'])->middleware('suscripcion.activa');
+        Route::get('/mis-viajes', [TaxistaViajeController::class, 'misViajes'])->middleware('suscripcion.activa');
+        Route::post('/aceptar-viaje/{viajeId}', [TaxistaViajeController::class, 'aceptarViaje'])->middleware('suscripcion.activa');
+        Route::post('/rechazar-viaje/{viajeId}', [TaxistaViajeController::class, 'rechazarViaje'])->middleware('suscripcion.activa');
+        Route::post('/completar-viaje/{viajeId}', [TaxistaViajeController::class, 'completarViaje'])->middleware('suscripcion.activa');
     });
 
     // ========== ENDPOINTS DEL SISTEMA ==========
@@ -87,7 +88,18 @@ Route::middleware('auth:api')->group(function () {
 
     // ========== GESTIÓN DE ROLES ==========
     Route::apiResource('roles', RoleController::class);
+
+    // ========== SUSCRIPCIONES ==========
+    Route::prefix('suscripcion')->group(function () {
+        Route::get('/mi-suscripcion', [SuscripcionController::class, 'miSuscripcion']);
+        Route::get('/historial', [SuscripcionController::class, 'historial']);
+        Route::post('/crear', [SuscripcionController::class, 'crearSuscripcion']);
+        Route::post('/confirmar-pago/{suscripcionId}', [SuscripcionController::class, 'confirmarPago']);
+    });
 });
+
+// Webhook de Stripe (sin autenticación, usa firma de Stripe)
+Route::post('/stripe/webhook', [App\Http\Controllers\StripeWebhookController::class, 'handleWebhook']);
 
 // Rutas para Géneros (públicas)
 Route::apiResource('generos', GeneroController::class);
