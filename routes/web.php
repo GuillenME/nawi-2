@@ -6,6 +6,7 @@ use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\TaxistaController;
 use App\Http\Controllers\WebAuthController;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\MetricsController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -77,3 +78,5 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/offline', function () {
     return view('offline');
 });
+
+Route::get('/metrics', [MetricsController::class, 'export']);

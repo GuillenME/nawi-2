@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  # ---------------- Laravel + Apache ----------------
+  app:
+    build: .
+    image: laravel-app
+    container_name: laravel_app
+    ports:
+      - "8000:80"  # host:container
+    environment:
+      - APP_ENV=production
+      - APP_KEY=${APP_KEY}
+      - DB_HOST=db
+    depends_on:
+      - db
+
+  # ---------------- MySQL ----------------
+  db:
+    image: mysql:latest
+    container_name: laravel_db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: laravel
+    volumes:
+      - dbdata:/var/lib/mysql
+
+  # ---------------- Prometheus ----------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - app
+      - node_exporter
+
+  # ---------------- Grafana ----------------
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+  # ---------------- Node Exporter ----------------
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter
+    ports:
+      - "9100:9100"
+
+volumes:
+  dbdata:
